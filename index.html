@@ -43,14 +43,14 @@
           </div></fieldset>
 
           <div class="step"><span>3</span><h2>位置微调</h2></div>
-          <label>缩放 <output id="zoomValue">100%</output><input id="zoom" type="range" min="50" max="300" value="100" /></label>
-          <label>左右 <input id="offsetX" type="range" min="-300" max="300" value="0" /></label>
-          <label>上下 <input id="offsetY" type="range" min="-300" max="300" value="0" /></label>
+          <label>缩放 <output id="zoomValue">100%</output><input id="zoom" type="range" min="100" max="300" value="100" /></label>
+          <label>左右 <input id="offsetX" type="range" min="0" max="0" step="any" value="0" /></label>
+          <label>上下 <input id="offsetY" type="range" min="0" max="0" step="any" value="0" /></label>
           <button id="resetAdjust" class="secondary">重置微调</button>
         </aside>
 
         <section class="preview-column">
-          <div class="card preview-card"><div class="preview-head"><h2>单张预览</h2><span id="pixelInfo"></span></div><div class="canvas-wrap"><canvas id="photoCanvas"></canvas><p id="emptyHint">上传照片后在这里预览</p></div><button id="downloadSingle" class="primary" disabled>下载单张 PNG</button></div>
+          <div class="card preview-card"><div class="preview-head"><h2>单张预览</h2><span id="pixelInfo"></span></div><p class="interaction-hint">↔ 拖动调整位置 · 滚轮或双指缩放</p><div class="canvas-wrap"><canvas id="photoCanvas" aria-label="证件照预览，可拖动并缩放"></canvas><p id="emptyHint">上传照片后在这里预览</p></div><button id="downloadSingle" class="primary" disabled>下载单张 PNG</button></div>
           <div class="card sheet-card"><div class="preview-head"><h2>自动多图拼版</h2><label>纸张<select id="sheetType"><option value="4r">4R 4×6in</option><option value="a4">A4</option></select></label></div>
             <label class="checkbox"><input id="cropMarks" type="checkbox" checked /> 显示裁切线</label>
             <div class="sheet-preview"><canvas id="sheetCanvas"></canvas></div><p id="sheetInfo">上传照片后自动排列</p><button id="downloadSheet" class="primary" disabled>下载拼版 PNG（300DPI）</button>

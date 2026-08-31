@@ -2,12 +2,13 @@ import './style.css'
 import { removeBackground } from '@imgly/background-removal'
 import { mmToPx, resolvePhotoSize } from './lib/sizes.js'
 import { getSheetPixels, calculateGridLayout, createCropMarks } from './lib/layout.js'
-import { calculateCoverTransform, applyAdjustment, clampAdjustment } from './lib/transform.js'
+import { calculateCoverTransform, applyAdjustment, constrainAdjustment, clientDeltaToCanvas } from './lib/transform.js'
 import { addPngDpiMetadata } from './lib/png.js'
 
 const $ = (id) => document.getElementById(id)
 const elements = Object.fromEntries(['fileInput','dropZone','removeBg','status','sizePreset','customSize','customWidth','customHeight','customColor','zoom','zoomValue','offsetX','offsetY','resetAdjust','photoCanvas','sheetCanvas','pixelInfo','sheetType','cropMarks','sheetInfo','downloadSingle','downloadSheet'].map((id) => [id, $(id)]))
 const state = { image: null, sourceUrl: null, background: '#ffffff', selectionId: 0 }
+const activePointers = new Map()
 const MAX_FILE_BYTES = 25 * 1024 * 1024
 const MAX_IMAGE_PIXELS = 40_000_000
 
@@ -52,6 +53,35 @@ async function acceptFile(file) {
   }
 }
 
+function syncAdjustmentControls(adjustment) {
+  elements.zoom.value = Math.round(adjustment.zoom * 100)
+  elements.zoomValue.value = `${elements.zoom.value}%`
+  elements.offsetX.min = -Math.ceil(Math.abs(adjustment.maxOffsetX ?? adjustment.offsetX))
+  elements.offsetX.max = Math.ceil(Math.abs(adjustment.maxOffsetX ?? adjustment.offsetX))
+  elements.offsetY.min = -Math.ceil(Math.abs(adjustment.maxOffsetY ?? adjustment.offsetY))
+  elements.offsetY.max = Math.ceil(Math.abs(adjustment.maxOffsetY ?? adjustment.offsetY))
+  elements.offsetX.value = adjustment.offsetX
+  elements.offsetY.value = adjustment.offsetY
+}
+
+function getConstrainedAdjustment(zoom = elements.zoom.value / 100, offsetX = elements.offsetX.value, offsetY = elements.offsetY.value) {
+  if (!state.image || !elements.photoCanvas.width || !elements.photoCanvas.height) return null
+  const base = calculateCoverTransform(state.image.naturalWidth, state.image.naturalHeight, elements.photoCanvas.width, elements.photoCanvas.height)
+  const adjustment = constrainAdjustment(base, elements.photoCanvas.width, elements.photoCanvas.height, zoom, offsetX, offsetY)
+  return {
+    ...adjustment,
+    maxOffsetX: Math.max(0, (base.drawWidth * adjustment.zoom - elements.photoCanvas.width) / 2),
+    maxOffsetY: Math.max(0, (base.drawHeight * adjustment.zoom - elements.photoCanvas.height) / 2)
+  }
+}
+
+function setAdjustment(zoom, offsetX, offsetY) {
+  const adjustment = getConstrainedAdjustment(zoom, offsetX, offsetY)
+  if (!adjustment) return
+  syncAdjustmentControls(adjustment)
+  renderAll()
+}
+
 function renderPhoto() {
   if (!state.image) return
   let size
@@ -64,8 +94,11 @@ function renderPhoto() {
   const context = canvas.getContext('2d')
   context.fillStyle = state.background
   context.fillRect(0, 0, width, height)
-  const bounded = clampAdjustment(elements.zoom.value / 100, elements.offsetX.value, elements.offsetY.value)
   const base = calculateCoverTransform(state.image.naturalWidth, state.image.naturalHeight, width, height)
+  const bounded = constrainAdjustment(base, width, height, elements.zoom.value / 100, elements.offsetX.value, elements.offsetY.value)
+  const maxOffsetX = Math.max(0, (base.drawWidth * bounded.zoom - width) / 2)
+  const maxOffsetY = Math.max(0, (base.drawHeight * bounded.zoom - height) / 2)
+  syncAdjustmentControls({ ...bounded, maxOffsetX, maxOffsetY })
   const draw = applyAdjustment(base, bounded.zoom, bounded.offsetX, bounded.offsetY)
   context.drawImage(state.image, draw.x, draw.y, draw.drawWidth, draw.drawHeight)
   elements.pixelInfo.textContent = `${size.label} · ${width}×${height}px · 300DPI`
@@ -113,6 +146,90 @@ function downloadCanvas(canvas, filename) {
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }, 'image/png')
 }
+
+function pointerDistance(points) {
+  return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y)
+}
+
+function pointerCenter(points) {
+  return { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 }
+}
+
+function canvasPoint(clientX, clientY) {
+  const rect = elements.photoCanvas.getBoundingClientRect()
+  return {
+    x: (clientX - rect.left) * elements.photoCanvas.width / rect.width,
+    y: (clientY - rect.top) * elements.photoCanvas.height / rect.height
+  }
+}
+
+elements.photoCanvas.addEventListener('pointerdown', (event) => {
+  if (!state.image) return
+  elements.photoCanvas.setPointerCapture(event.pointerId)
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  elements.photoCanvas.classList.add('is-dragging')
+})
+
+elements.photoCanvas.addEventListener('pointermove', (event) => {
+  const previous = activePointers.get(event.pointerId)
+  if (!previous || !state.image) return
+  event.preventDefault()
+
+  if (activePointers.size === 1) {
+    const rect = elements.photoCanvas.getBoundingClientRect()
+    const delta = clientDeltaToCanvas(event.clientX - previous.x, event.clientY - previous.y, elements.photoCanvas.width, elements.photoCanvas.height, rect.width, rect.height)
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    setAdjustment(elements.zoom.value / 100, Number(elements.offsetX.value) + delta.x, Number(elements.offsetY.value) + delta.y)
+    return
+  }
+
+  if (activePointers.size === 2) {
+    const oldPoints = [...activePointers.values()]
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    const newPoints = [...activePointers.values()]
+    const oldDistance = pointerDistance(oldPoints)
+    const factor = oldDistance > 0 ? pointerDistance(newPoints) / oldDistance : 1
+    const oldCenter = pointerCenter(oldPoints)
+    const newCenter = pointerCenter(newPoints)
+    const oldCanvasCenter = canvasPoint(oldCenter.x, oldCenter.y)
+    const rect = elements.photoCanvas.getBoundingClientRect()
+    const centerDelta = clientDeltaToCanvas(newCenter.x - oldCenter.x, newCenter.y - oldCenter.y, elements.photoCanvas.width, elements.photoCanvas.height, rect.width, rect.height)
+    const zoom = Number(elements.zoom.value) / 100
+    const offsetX = Number(elements.offsetX.value)
+    const offsetY = Number(elements.offsetY.value)
+    const canvasCenterX = elements.photoCanvas.width / 2
+    const canvasCenterY = elements.photoCanvas.height / 2
+    setAdjustment(
+      zoom * factor,
+      factor * offsetX + (1 - factor) * (oldCanvasCenter.x - canvasCenterX) + centerDelta.x,
+      factor * offsetY + (1 - factor) * (oldCanvasCenter.y - canvasCenterY) + centerDelta.y
+    )
+  }
+})
+
+function releasePointer(event) {
+  activePointers.delete(event.pointerId)
+  if (activePointers.size === 0) elements.photoCanvas.classList.remove('is-dragging')
+}
+
+elements.photoCanvas.addEventListener('pointerup', releasePointer)
+elements.photoCanvas.addEventListener('pointercancel', releasePointer)
+elements.photoCanvas.addEventListener('lostpointercapture', releasePointer)
+elements.photoCanvas.addEventListener('wheel', (event) => {
+  if (!state.image) return
+  event.preventDefault()
+  const point = canvasPoint(event.clientX, event.clientY)
+  const oldZoom = Number(elements.zoom.value) / 100
+  const nextZoom = Math.min(3, Math.max(1, oldZoom * Math.exp(-event.deltaY * 0.0015)))
+  const factor = nextZoom / oldZoom
+  const canvasCenterX = elements.photoCanvas.width / 2
+  const canvasCenterY = elements.photoCanvas.height / 2
+  setAdjustment(
+    nextZoom,
+    factor * Number(elements.offsetX.value) + (1 - factor) * (point.x - canvasCenterX),
+    factor * Number(elements.offsetY.value) + (1 - factor) * (point.y - canvasCenterY)
+  )
+}, { passive: false })
 
 elements.fileInput.addEventListener('change', (event) => acceptFile(event.target.files[0]))
 ;['dragenter','dragover'].forEach((type) => elements.dropZone.addEventListener(type, (event) => { event.preventDefault(); elements.dropZone.style.borderColor = '#246bfd' }))
