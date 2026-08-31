@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="照片仅在浏览器本地处理的免费证件照制作与拼版工具" />
+    <title>证件照工作室</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div><span class="logo">证</span><strong>证件照工作室</strong></div>
+      <span class="privacy-badge">🔒 图片仅在本地处理</span>
+    </header>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">免费 · 开源 · 无需上传服务器</p>
+        <h1>在浏览器里完成证件照</h1>
+        <p>自动抠图、标准尺寸、背景换色与 300DPI 多图拼版。</p>
+      </section>
+
+      <section class="workspace">
+        <aside class="controls card">
+          <div class="step"><span>1</span><h2>选择照片</h2></div>
+          <label class="upload-zone" id="dropZone">
+            <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" />
+            <b>点击或拖入照片</b><small>支持 JPG、PNG、WebP</small>
+          </label>
+          <button id="removeBg" class="primary" disabled>本地智能抠图</button>
+          <p id="status" class="status" aria-live="polite">请选择一张清晰正面照片</p>
+
+          <div class="step"><span>2</span><h2>规格与底色</h2></div>
+          <label>证件照尺寸<select id="sizePreset">
+            <option value="oneInch">一寸 25×35mm</option><option value="twoInch">二寸 35×49mm</option>
+            <option value="passport">护照 33×48mm</option><option value="35x45">35×45mm</option>
+            <option value="us-2x2">美国 2×2in</option><option value="custom">自定义宽高</option>
+          </select></label>
+          <div id="customSize" class="custom-size hidden"><label>宽 (mm)<input id="customWidth" type="number" value="30" min="1" /></label><label>高 (mm)<input id="customHeight" type="number" value="40" min="1" /></label></div>
+          <fieldset><legend>背景颜色</legend><div class="swatches">
+            <button class="swatch active" data-color="#ffffff" style="--swatch:#fff" aria-label="白色"></button>
+            <button class="swatch" data-color="#438edb" style="--swatch:#438edb" aria-label="蓝色"></button>
+            <button class="swatch" data-color="#d92d35" style="--swatch:#d92d35" aria-label="红色"></button>
+            <label class="color-picker">自定义<input id="customColor" type="color" value="#88bbee" /></label>
+          </div></fieldset>
+
+          <div class="step"><span>3</span><h2>位置微调</h2></div>
+          <label>缩放 <output id="zoomValue">100%</output><input id="zoom" type="range" min="50" max="300" value="100" /></label>
+          <label>左右 <input id="offsetX" type="range" min="-300" max="300" value="0" /></label>
+          <label>上下 <input id="offsetY" type="range" min="-300" max="300" value="0" /></label>
+          <button id="resetAdjust" class="secondary">重置微调</button>
+        </aside>
+
+        <section class="preview-column">
+          <div class="card preview-card"><div class="preview-head"><h2>单张预览</h2><span id="pixelInfo"></span></div><div class="canvas-wrap"><canvas id="photoCanvas"></canvas><p id="emptyHint">上传照片后在这里预览</p></div><button id="downloadSingle" class="primary" disabled>下载单张 PNG</button></div>
+          <div class="card sheet-card"><div class="preview-head"><h2>自动多图拼版</h2><label>纸张<select id="sheetType"><option value="4r">4R 4×6in</option><option value="a4">A4</option></select></label></div>
+            <label class="checkbox"><input id="cropMarks" type="checkbox" checked /> 显示裁切线</label>
+            <div class="sheet-preview"><canvas id="sheetCanvas"></canvas></div><p id="sheetInfo">上传照片后自动排列</p><button id="downloadSheet" class="primary" disabled>下载拼版 PNG（300DPI）</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="info-grid"><article><h2>隐私说明</h2><p>原始照片、抠图结果和导出文件均在您的浏览器中处理，不会上传到本项目服务器。首次抠图时浏览器会从 IMG.LY 默认 CDN 获取模型和 WASM 运行资源。</p></article><article><h2>开源与许可证</h2><p>本项目原创源码采用 <strong>AGPL-3.0-only</strong>。抠图由 <code>@imgly/background-removal</code> 提供；其代码和模型受 IMG.LY 各自许可证约束，详情见仓库 THIRD_PARTY_LICENSES.md。</p></article><article><h2>拍摄建议</h2><p>使用均匀光线和简洁背景，保持正脸、双眼睁开，避免头发和衣服与背景颜色过于接近。</p></article></section>
+    </main>
+    <footer>证件照工作室 · 浏览器端本地处理 · AGPL-3.0-only</footer>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

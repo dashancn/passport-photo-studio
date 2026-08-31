@@ -1,0 +1,21 @@
+{
+  "name": "passport-photo-studio",
+  "version": "1.0.0",
+  "description": "浏览器端本地证件照制作与拼版工具",
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "test": "node --test",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@imgly/background-removal": "^1.7.0",
+    "onnxruntime-web": "^1.21.0"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
+  }
+}
