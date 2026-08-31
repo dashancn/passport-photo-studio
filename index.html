@@ -34,7 +34,7 @@
             <option value="passport">护照 33×48mm</option><option value="35x45">35×45mm</option>
             <option value="us-2x2">美国 2×2in</option><option value="custom">自定义宽高</option>
           </select></label>
-          <div id="customSize" class="custom-size hidden"><label>宽 (mm)<input id="customWidth" type="number" value="30" min="1" /></label><label>高 (mm)<input id="customHeight" type="number" value="40" min="1" /></label></div>
+          <div id="customSize" class="custom-size hidden"><label>宽 (mm)<input id="customWidth" type="number" value="30" min="1" max="300" /></label><label>高 (mm)<input id="customHeight" type="number" value="40" min="1" max="300" /></label></div>
           <fieldset><legend>背景颜色</legend><div class="swatches">
             <button class="swatch active" data-color="#ffffff" style="--swatch:#fff" aria-label="白色"></button>
             <button class="swatch" data-color="#438edb" style="--swatch:#438edb" aria-label="蓝色"></button>
@@ -58,9 +58,9 @@
         </section>
       </section>
 
-      <section class="info-grid"><article><h2>隐私说明</h2><p>原始照片、抠图结果和导出文件均在您的浏览器中处理，不会上传到本项目服务器。首次抠图时浏览器会从 IMG.LY 默认 CDN 获取模型和 WASM 运行资源。</p></article><article><h2>开源与许可证</h2><p>本项目原创源码采用 <strong>AGPL-3.0-only</strong>。抠图由 <code>@imgly/background-removal</code> 提供；其代码和模型受 IMG.LY 各自许可证约束，详情见仓库 THIRD_PARTY_LICENSES.md。</p></article><article><h2>拍摄建议</h2><p>使用均匀光线和简洁背景，保持正脸、双眼睁开，避免头发和衣服与背景颜色过于接近。</p></article></section>
+      <section class="info-grid"><article><h2>隐私说明</h2><p>原始照片、抠图结果和导出文件均在您的浏览器中处理，不会上传到本项目服务器。首次抠图时浏览器会从 IMG.LY 默认 CDN 获取模型和 WASM 运行资源。</p></article><article><h2>开源与许可证</h2><p>本项目原创源码采用 <strong>AGPL-3.0-only</strong>。抠图由 <code>@imgly/background-removal</code> 提供；其代码和模型受各自许可证约束。</p><p><a href="https://github.com/dashancn/passport-photo-studio" target="_blank" rel="noopener">查看源码</a> · <a href="https://github.com/dashancn/passport-photo-studio/blob/main/LICENSE" target="_blank" rel="noopener">AGPL 许可证</a> · <a href="https://github.com/dashancn/passport-photo-studio/blob/main/THIRD_PARTY_LICENSES.md" target="_blank" rel="noopener">第三方声明</a></p></article><article><h2>拍摄建议</h2><p>使用均匀光线和简洁背景，保持正脸、双眼睁开，避免头发和衣服与背景颜色过于接近。</p></article></section>
     </main>
-    <footer>证件照工作室 · 浏览器端本地处理 · AGPL-3.0-only</footer>
+    <footer>证件照工作室 · 浏览器端本地处理 · AGPL-3.0-only · 本软件不提供任何担保</footer>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

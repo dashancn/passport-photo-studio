@@ -3,10 +3,13 @@ import { removeBackground } from '@imgly/background-removal'
 import { mmToPx, resolvePhotoSize } from './lib/sizes.js'
 import { getSheetPixels, calculateGridLayout, createCropMarks } from './lib/layout.js'
 import { calculateCoverTransform, applyAdjustment, clampAdjustment } from './lib/transform.js'
+import { addPngDpiMetadata } from './lib/png.js'
 
 const $ = (id) => document.getElementById(id)
 const elements = Object.fromEntries(['fileInput','dropZone','removeBg','status','sizePreset','customSize','customWidth','customHeight','customColor','zoom','zoomValue','offsetX','offsetY','resetAdjust','photoCanvas','sheetCanvas','pixelInfo','sheetType','cropMarks','sheetInfo','downloadSingle','downloadSheet'].map((id) => [id, $(id)]))
-const state = { image: null, sourceUrl: null, background: '#ffffff' }
+const state = { image: null, sourceUrl: null, background: '#ffffff', selectionId: 0 }
+const MAX_FILE_BYTES = 25 * 1024 * 1024
+const MAX_IMAGE_PIXELS = 40_000_000
 
 function loadImage(url) {
   return new Promise((resolve, reject) => {
@@ -28,17 +31,24 @@ function setStatus(message, error = false) {
 
 async function acceptFile(file) {
   if (!file || !file.type.startsWith('image/')) return
-  if (state.sourceUrl) URL.revokeObjectURL(state.sourceUrl)
-  state.sourceUrl = URL.createObjectURL(file)
+  if (file.size > MAX_FILE_BYTES) { setStatus('图片文件不能超过 25MB', true); return }
+  const temporaryUrl = URL.createObjectURL(file)
   try {
-    state.image = await loadImage(state.sourceUrl)
+    const image = await loadImage(temporaryUrl)
+    if (image.naturalWidth * image.naturalHeight > MAX_IMAGE_PIXELS) throw new Error('图片像素过大')
+    const previousUrl = state.sourceUrl
+    state.sourceUrl = temporaryUrl
+    state.image = image
+    state.selectionId += 1
+    if (previousUrl) URL.revokeObjectURL(previousUrl)
     elements.removeBg.disabled = false
     elements.downloadSingle.disabled = false
     elements.downloadSheet.disabled = false
     setStatus('照片已载入，可直接调整或进行本地抠图')
     renderAll()
   } catch {
-    setStatus('无法读取该图片，请更换文件', true)
+    URL.revokeObjectURL(temporaryUrl)
+    setStatus('无法读取该图片，或图片尺寸超过 4000 万像素', true)
   }
 }
 
@@ -95,9 +105,10 @@ function renderSheet() {
 
 function renderAll() { renderPhoto(); renderSheet() }
 function downloadCanvas(canvas, filename) {
-  canvas.toBlob((blob) => {
+  canvas.toBlob(async (blob) => {
     if (!blob) return
-    const url = URL.createObjectURL(blob)
+    const png = addPngDpiMetadata(new Uint8Array(await blob.arrayBuffer()), 300)
+    const url = URL.createObjectURL(new Blob([png], { type: 'image/png' }))
     const link = document.createElement('a'); link.href = url; link.download = filename; link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }, 'image/png')
@@ -110,19 +121,31 @@ elements.dropZone.addEventListener('drop', (event) => acceptFile(event.dataTrans
 
 elements.removeBg.addEventListener('click', async () => {
   if (!state.sourceUrl) return
+  const inputUrl = state.sourceUrl
+  const selectionId = state.selectionId
   elements.removeBg.disabled = true
   setStatus('正在加载模型并在本地抠图，首次使用可能需要较长时间…')
   try {
-    const blob = await removeBackground(state.sourceUrl, { progress: (key, current, total) => setStatus(`本地抠图：${key} ${Math.round(current / total * 100)}%`) })
-    if (state.sourceUrl) URL.revokeObjectURL(state.sourceUrl)
-    state.sourceUrl = URL.createObjectURL(blob)
-    state.image = await loadImage(state.sourceUrl)
+    const blob = await removeBackground(inputUrl, { progress: (key, current, total) => {
+      const percent = total > 0 ? Math.round(current / total * 100) : 0
+      if (selectionId === state.selectionId) setStatus(`本地抠图：${key} ${percent}%`)
+    } })
+    if (selectionId !== state.selectionId || inputUrl !== state.sourceUrl) return
+    const resultUrl = URL.createObjectURL(blob)
+    const resultImage = await loadImage(resultUrl)
+    if (selectionId !== state.selectionId || inputUrl !== state.sourceUrl) { URL.revokeObjectURL(resultUrl); return }
+    URL.revokeObjectURL(inputUrl)
+    state.sourceUrl = resultUrl
+    state.image = resultImage
+    state.selectionId += 1
     setStatus('本地抠图完成，照片未上传到服务器')
     renderAll()
   } catch (error) {
     console.error(error)
-    setStatus('抠图失败，请检查网络资源加载或尝试较小的照片', true)
-  } finally { elements.removeBg.disabled = false }
+    if (selectionId === state.selectionId) setStatus('抠图失败，请检查网络资源加载或尝试较小的照片', true)
+  } finally {
+    elements.removeBg.disabled = false
+  }
 })
 
 document.querySelectorAll('.swatch').forEach((button) => button.addEventListener('click', () => {

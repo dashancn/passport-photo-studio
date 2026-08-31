@@ -20,3 +20,8 @@ test('自定义尺寸必须是有效正数', () => {
   assert.deepEqual(resolvePhotoSize('custom', 30, 40), { widthMm: 30, heightMm: 40, label: '自定义 30×40mm' })
   assert.throws(() => resolvePhotoSize('custom', 0, 40), /正数/)
 })
+
+test('自定义尺寸限制在常见打印安全范围内', () => {
+  assert.throws(() => resolvePhotoSize('custom', 301, 35), /不超过 300mm/)
+  assert.throws(() => resolvePhotoSize('custom', 35, 301), /不超过 300mm/)
+})

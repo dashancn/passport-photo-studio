@@ -25,5 +25,6 @@ export function resolvePhotoSize(key, customWidth, customHeight) {
   if (!Number.isFinite(widthMm) || !Number.isFinite(heightMm) || widthMm <= 0 || heightMm <= 0) {
     throw new Error('自定义宽高必须是正数')
   }
+  if (widthMm > 300 || heightMm > 300) throw new Error('自定义宽高应不超过 300mm')
   return { widthMm, heightMm, label: `自定义 ${widthMm}×${heightMm}mm` }
 }
