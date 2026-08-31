@@ -14,6 +14,28 @@ test('顶部导航展示品牌生态并安全打开外链', async () => {
   assert.match(html, /aria-current="page"[^>]*>证件照<\/span>/)
 })
 
+test('生态导航在悬停和键盘聚焦时展示完整介绍且不会溢出视口', async () => {
+  const [html, css] = await Promise.all([
+    readFile(projectFile('index.html'), 'utf8'),
+    readFile(projectFile('src/style.css'), 'utf8'),
+  ])
+  const tooltips = new Map([
+    ['i方案', 'i方案是一套面向本地实体商家、内容运营人员和营销服务团队的智能内容工作平台。平台围绕行业、平台、品类、风格和使用场景，提供文案生成、文案诊断、客户跟单话术、文生图、视频包制作和精品模板等能力，帮助用户从内容构思、表单草稿、生成优化到后续复用形成完整工作链路。'],
+    ['开发者工具', '开发者工具箱汇集编码转换、格式化、加密、网络、文本和图片等常用在线工具，强调快速、易用和浏览器端处理。'],
+    ['图片压缩', '图片修改压缩是一款浏览器端在线图片处理工具，支持压缩、调整尺寸和格式转换，图片尽量在本地处理，适合日常上传、分享和网页优化。'],
+    ['证件照', '证件照工作室是一款浏览器端证件照制作工具，支持本地智能抠图、背景换色、常用证件尺寸和 300DPI 多图拼版，照片无需上传到业务服务器。'],
+  ])
+
+  for (const [label, tooltip] of tooltips) {
+    const escapedTooltip = tooltip.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    assert.match(html, new RegExp(`data-tooltip="${escapedTooltip}"[^>]*>${label}</`))
+  }
+  assert.match(html, /class="active"[^>]+tabindex="0"[^>]+aria-current="page"/)
+  assert.match(css, /\[data-tooltip\]:hover::after/)
+  assert.match(css, /\[data-tooltip\]:focus-visible::after/)
+  assert.match(css, /max-width:min\([^;]+100vw/)
+})
+
 test('README 记录完整品牌生态链接', async () => {
   const readme = await readFile(projectFile('README.md'), 'utf8')
 
