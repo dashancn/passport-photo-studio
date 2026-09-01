@@ -4,13 +4,21 @@ import { mmToPx, resolvePhotoSize } from './lib/sizes.js'
 import { getSheetPixels, calculateGridLayout, createCropMarks } from './lib/layout.js'
 import { calculateCoverTransform, applyAdjustment, constrainAdjustment, clientDeltaToCanvas } from './lib/transform.js'
 import { addPngDpiMetadata } from './lib/png.js'
+import { markModelCached, modelCacheStatus } from './lib/model-cache.js'
 
 const $ = (id) => document.getElementById(id)
-const elements = Object.fromEntries(['fileInput','dropZone','removeBg','status','sizePreset','customSize','customWidth','customHeight','customColor','zoom','zoomValue','offsetX','offsetY','resetAdjust','photoCanvas','sheetCanvas','pixelInfo','sheetType','cropMarks','sheetInfo','downloadSingle','downloadSheet'].map((id) => [id, $(id)]))
+const elements = Object.fromEntries(['fileInput','dropZone','removeBg','modelStatus','status','sizePreset','customSize','customWidth','customHeight','customColor','zoom','zoomValue','offsetX','offsetY','resetAdjust','photoCanvas','sheetCanvas','pixelInfo','sheetType','cropMarks','sheetInfo','downloadSingle','downloadSheet'].map((id) => [id, $(id)]))
 const state = { image: null, sourceUrl: null, background: '#ffffff', selectionId: 0 }
 const activePointers = new Map()
 const MAX_FILE_BYTES = 25 * 1024 * 1024
 const MAX_IMAGE_PIXELS = 40_000_000
+
+async function refreshModelStatus() {
+  const status = await modelCacheStatus()
+  elements.modelStatus.dataset.state = status
+}
+
+void refreshModelStatus()
 
 function loadImage(url) {
   return new Promise((resolve, reject) => {
@@ -256,6 +264,8 @@ elements.removeBg.addEventListener('click', async () => {
     state.image = resultImage
     state.selectionId += 1
     setStatus('本地抠图完成，照片未上传到服务器')
+    markModelCached()
+    void refreshModelStatus()
     renderAll()
   } catch (error) {
     console.error(error)

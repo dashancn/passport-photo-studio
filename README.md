@@ -20,6 +20,7 @@
 - [i方案](https://www.i41.cn)：品牌主页与方案入口
 - [开发者工具](https://tools.i41.cn)：常用在线开发工具
 - [图片压缩](https://imgzip.i41.cn)：在线图片压缩工具
+- [PDF 工具](https://pdf.i41.cn)：PDF 合并、拆分、压缩、转换、编辑、OCR 与发票拼版
 - [证件照工作室](https://idphoto.i41.cn)：当前项目的线上地址
 
 ## 本地开发
