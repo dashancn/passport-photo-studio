@@ -8,7 +8,7 @@ test('顶部导航展示品牌生态并安全打开外链', async () => {
   const html = await readFile(projectFile('index.html'), 'utf8')
 
   assert.match(html, /<nav[^>]+aria-label="品牌生态"/)
-  assert.match(html, /href="https:\/\/www\.i41\.cn"[^>]+rel="noopener noreferrer"[^>]*>i方案<\/a>/)
+  assert.match(html, /href="https:\/\/www\.i41\.cn\?utm_source=idphoto&utm_medium=tool_referral&utm_campaign=ifangan&utm_content=ecosystem_nav"[^>]+rel="noopener noreferrer"[^>]*>i方案<\/a>/)
   assert.match(html, /href="https:\/\/tools\.i41\.cn"[^>]+rel="noopener noreferrer"[^>]*>开发者工具<\/a>/)
   assert.match(html, /href="https:\/\/imgzip\.i41\.cn"[^>]+rel="noopener noreferrer"[^>]*>图片压缩<\/a>/)
   assert.match(html, /href="https:\/\/pdf\.i41\.cn"[^>]+rel="noopener noreferrer"[^>]*>PDF 工具<\/a>/)
