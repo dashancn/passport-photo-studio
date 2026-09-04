@@ -21,18 +21,30 @@ test('安全策略允许加载和发送 i41 匿名统计', async () => {
   }
 })
 
-test('可见隐私说明完整披露本地处理和匿名统计边界', async () => {
+test('折叠区域完整披露隐私、许可证和第三方归属', async () => {
   const html = await readFile(projectFile('index.html'), 'utf8')
-  const privacy = html.match(/<article><h2>隐私说明<\/h2>([\s\S]*?)<\/article>/)?.[1] ?? ''
+  const details = html.match(/<details class="legal-details">([\s\S]*?)<\/details>/)?.[1] ?? ''
 
-  assert.match(privacy, /照片[^。]*本地处理/)
-  assert.match(privacy, /抠图[^。]*本地处理/)
+  assert.match(html, /照片本地处理/)
+  assert.match(html, /AGPL-3\.0 开源/)
+  assert.match(details, /照片[^。]*本地处理/)
+  assert.match(details, /抠图[^。]*本地处理/)
   for (const item of ['匿名访问', '性能', 'UTM', '跨站点击']) {
-    assert.ok(privacy.includes(item), `隐私说明缺少发送范围：${item}`)
+    assert.ok(details.includes(item), `隐私说明缺少发送范围：${item}`)
   }
   for (const item of ['照片', '文件名', '导出内容', '永久标识']) {
-    assert.match(privacy, new RegExp(`不(?:会)?(?:收集|发送)[^。]*${item}`), `隐私说明未明确排除：${item}`)
+    assert.match(details, new RegExp(`不(?:会)?(?:收集|发送)[^。]*${item}`), `隐私说明未明确排除：${item}`)
   }
+  for (const item of ['@imgly/background-removal', 'AGPL-3.0-only', '第三方声明', '本软件不提供任何担保']) {
+    assert.ok(details.includes(item), `折叠说明缺少：${item}`)
+  }
+})
+
+test('拍摄建议默认折叠且页脚保持精简', async () => {
+  const html = await readFile(projectFile('index.html'), 'utf8')
+  assert.match(html, /<details class="shooting-tips">[\s\S]*?<summary>查看拍摄建议<\/summary>/)
+  assert.match(html, /<footer>证件照工作室 · i41 免费实用工具 · 本地处理<\/footer>/)
+  assert.doesNotMatch(html, /<section class="info-grid">/)
 })
 
 test('README 隐私文档与页面匿名统计披露一致', async () => {
