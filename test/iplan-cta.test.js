@@ -19,8 +19,7 @@ test('首页提供带来源归属的 i方案访问引导', async () => {
   assert.match(banner, /<strong>关注 i方案<\/strong>/)
   assert.match(banner, /获取内容创作、客户跟单、文生图与视频制作方案/)
   assert.match(banner, /访问 i方案\s*<span aria-hidden="true">→<\/span>/)
-  assert.match(banner, /target="_blank"/)
-  assert.match(banner, /rel="noopener noreferrer"/)
+  assert.doesNotMatch(banner, /target="_blank"|\brel=/)
   assert.match(css, /\.iplan-cta\{[^}]*background:#fff8d8/)
 })
 

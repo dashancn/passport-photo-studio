@@ -4,11 +4,10 @@ import { readFile } from 'node:fs/promises'
 
 const projectFile = (name) => new URL(`../${name}`, import.meta.url)
 
-test('顶部导航按统一顺序展示全部生态入口和当前站', async () => {
+test('顶部导航按标准顺序展示八个生态入口且不重复当前站', async () => {
   const html = await readFile(projectFile('index.html'), 'utf8')
   const nav = html.match(/<nav[^>]+aria-label="品牌生态"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? ''
-  const items = [...nav.matchAll(/<(a|span)\b([^>]*)>([^<]+)<\/\1>/g)].map(([, tag, attributes, label]) => ({
-    tag,
+  const items = [...nav.matchAll(/<a\b([^>]*)>([^<]+)<\/a>/g)].map(([, attributes, label]) => ({
     attributes,
     label: label.trim(),
   }))
@@ -21,19 +20,14 @@ test('顶部导航按统一顺序展示全部生态入口和当前站', async ()
     ['PDF 工具', 'https://pdf.i41.cn'],
     ['证件水印', 'https://watermark.i41.cn'],
     ['临时剪贴板', 'https://clip.i41.cn'],
-    ['证件照', null],
   ]
 
   assert.deepEqual(items.map(({ label }) => label), expected.map(([label]) => label))
-  expected.slice(0, -1).forEach(([label, url], index) => {
-    assert.equal(items[index].tag, 'a', `${label} 应为外链`)
-    assert.match(items[index].attributes, new RegExp(`href="${url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
-    assert.match(items[index].attributes, /target="_blank"/)
-    assert.match(items[index].attributes, /rel="noopener noreferrer"/)
+  expected.forEach(([label, url], index) => {
+    assert.match(items[index].attributes, new RegExp(`href="${url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`), `${label} 链接错误`)
   })
-  assert.equal(items.at(-1).tag, 'span')
-  assert.match(items.at(-1).attributes, /class="active"/)
-  assert.match(items.at(-1).attributes, /aria-current="page"/)
+  assert.doesNotMatch(nav, />证件照<\//)
+  assert.doesNotMatch(nav, /target="_blank"|\brel=/)
 })
 
 test('顶部保留品牌、隐私徽章并采用统一导航视觉', async () => {
@@ -46,8 +40,8 @@ test('顶部保留品牌、隐私徽章并采用统一导航视觉', async () =>
   assert.match(html, /<span class="privacy-badge">🔒 图片仅在本地处理<\/span>/)
   assert.match(css, /\.site-header\{[^}]*min-height:64px/)
   assert.match(css, /\.site-header\{[^}]*background:#fff/)
+  assert.match(css, /\.ecosystem-nav a,.ecosystem-nav span\{[^}]*min-width:(?:7[2-9]|[89][0-9]|\d{3,})px[^}]*padding:/)
   assert.match(css, /\.ecosystem-nav \.featured\{[^}]*color:#fff[^}]*background:#246bfd[^}]*font-weight:(?:7[0-9]{2}|8[0-9]{2}|900)/)
-  assert.match(css, /\.ecosystem-nav \.active\{[^}]*color:#246bfd[^}]*background:#eaf0ff/)
 })
 
 test('窄屏导航保持顺序并允许滚动或折行', async () => {
@@ -71,14 +65,13 @@ test('生态导航在悬停和键盘聚焦时展示完整介绍且不会溢出�
     ['PDF 工具', 'PDF 工具箱提供合并、拆分、压缩、转换、编辑、OCR 和发票拼版等浏览器端 PDF 处理能力。'],
     ['证件水印', '证件水印工具支持为身份证、营业执照和合同截图添加用途水印，图片仅在浏览器本地处理。'],
     ['临时剪贴板', '临时剪贴板支持客户端加密、自动过期、读取次数限制和阅后即焚，适合跨设备传递临时文本。'],
-    ['证件照', '证件照工作室是一款浏览器端证件照制作工具，支持本地智能抠图、背景换色、常用证件尺寸和 300DPI 多图拼版，照片无需上传到业务服务器。'],
   ])
 
   for (const [label, tooltip] of tooltips) {
     const escapedTooltip = tooltip.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     assert.match(html, new RegExp(`data-tooltip="${escapedTooltip}"[^>]*>${label}</`))
   }
-  assert.match(html, /class="active"[^>]+tabindex="0"[^>]+aria-current="page"/)
+  assert.equal(tooltips.size, 8)
   assert.match(css, /\[data-tooltip\]:hover::after/)
   assert.match(css, /\[data-tooltip\]:focus-visible::after/)
   assert.match(css, /max-width:min\([^;]+100vw/)

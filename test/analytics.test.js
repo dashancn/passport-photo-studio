@@ -47,6 +47,20 @@ test('拍摄建议默认折叠且页脚保持精简', async () => {
   assert.doesNotMatch(html, /<section class="info-grid">/)
 })
 
+test('所有页面链接均在当前窗口打开且法律信息默认折叠', async () => {
+  const html = await readFile(projectFile('index.html'), 'utf8')
+  const legalDetails = html.match(/<details class="legal-details"([^>]*)>([\s\S]*?)<\/details>/)
+
+  assert.ok(legalDetails, '应保留法律信息折叠区域')
+  assert.doesNotMatch(legalDetails[1], /\bopen\b/)
+  assert.match(legalDetails[2], /隐私说明/)
+  assert.match(legalDetails[2], /AGPL-3\.0-only/)
+  assert.match(legalDetails[2], /@imgly\/background-removal/)
+  assert.match(legalDetails[2], /IMG\.LY/)
+  assert.match(legalDetails[2], /第三方声明/)
+  assert.doesNotMatch(html, /target="_blank"|\brel="(?:noopener|noreferrer|noopener noreferrer)"/)
+})
+
 test('README 隐私文档与页面匿名统计披露一致', async () => {
   const readme = await readFile(projectFile('README.md'), 'utf8')
   const privacy = readme.match(/## 隐私\s+([\s\S]*?)(?=\n## |$)/)?.[1] ?? ''
