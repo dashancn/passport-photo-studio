@@ -12,12 +12,16 @@ test('首页提供带来源归属的 i方案访问引导', async () => {
   const ecosystemUrl = 'https://www.i41.cn?utm_source=idphoto&utm_medium=tool_referral&utm_campaign=ifangan&utm_content=ecosystem_nav'
   const bannerUrl = 'https://www.i41.cn?utm_source=idphoto&utm_medium=tool_referral&utm_campaign=ifangan&utm_content=promo_banner'
 
-  assert.match(html, /class="iplan-cta"/)
+  const banner = html.match(/<aside class="iplan-cta"[^>]*>([\s\S]*?)<\/aside>/)?.[1] ?? ''
+
   assert.ok(html.includes(`href="${ecosystemUrl}"`), '顶部生态导航应使用 ecosystem_nav 归属链接')
-  assert.ok(html.includes(`href="${bannerUrl}"`), '浅黄色横幅应使用 promo_banner 归属链接')
-  assert.match(html, /关注 i方案/)
-  assert.match(html, /访问 i方案/)
-  assert.match(css, /\.iplan-cta/)
+  assert.ok(banner.includes(`href="${bannerUrl}"`), '浅黄色横幅应使用 promo_banner 归属链接')
+  assert.match(banner, /<strong>关注 i方案<\/strong>/)
+  assert.match(banner, /获取内容创作、客户跟单、文生图与视频制作方案/)
+  assert.match(banner, /访问 i方案\s*<span aria-hidden="true">→<\/span>/)
+  assert.match(banner, /target="_blank"/)
+  assert.match(banner, /rel="noopener noreferrer"/)
+  assert.match(css, /\.iplan-cta\{[^}]*background:#fff8d8/)
 })
 
 test('页面明确归属 i41 免费实用工具且保留许可边界', async () => {
